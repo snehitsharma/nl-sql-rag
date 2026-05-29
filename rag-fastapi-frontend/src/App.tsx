@@ -30,10 +30,10 @@ export default function App() {
     setError('')
     setShowSQL(false)
     try {
-      const res = await fetch('http://localhost:8000/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
       })
       if (!res.ok) {
         const err = await res.json()
