@@ -1,0 +1,50 @@
+#docker exec chromadb ls /usr/bin
+
+services:
+
+  backend:
+    build:
+      context: ./rag-fastapi
+    container_name: backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./rag-fastapi/.env
+    networks:
+      - rag_network
+    depends_on:
+      chromadb:
+        condition: service_healthy
+  frontend:
+    build:
+      context: ./rag-fastapi-frontend
+
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - rag_network
+    depends_on:
+      - backend
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=1
+    networks:
+      - rag_network
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  chroma_data:
+
+networks:
+  rag_network:
+    driver: bridge
