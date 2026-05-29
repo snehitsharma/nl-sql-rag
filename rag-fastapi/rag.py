@@ -16,7 +16,7 @@ load_dotenv()
 gemini_client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 chroma_client = chromadb.CloudClient(
-  api_key=os.getenv("API_KEY"),
+  api_key=os.getenv("CHROMA_API_KEY"),
   tenant='49699ce8-8229-488c-8535-c4e1fec73e06',
   database='rag-nl-sql'
 )

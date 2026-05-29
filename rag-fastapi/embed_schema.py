@@ -57,7 +57,7 @@ def embed_schema():
      # Connect to ChromaDB - connecting to dockerized ChromaDB server instead of in-process client
     #chroma_client = chromadb.HttpClient(host ="chromadb", port=8000) # Use HttpClient to connect to the ChromaDB server
     chroma_client = chromadb.CloudClient(
-    api_key=os.getenv("API_KEY"),
+    api_key=os.getenv("CHROMA_API_KEY"),
   tenant='49699ce8-8229-488c-8535-c4e1fec73e06',
   database='rag-nl-sql'
 )
