@@ -55,8 +55,12 @@ def embed_schema():
         print()
 
      # Connect to ChromaDB - connecting to dockerized ChromaDB server instead of in-process client
-    chroma_client = chromadb.HttpClient(host ="chromadb", port=8000) # Use HttpClient to connect to the ChromaDB server
-
+    #chroma_client = chromadb.HttpClient(host ="chromadb", port=8000) # Use HttpClient to connect to the ChromaDB server
+    chroma_client = chromadb.CloudClient(
+    api_key=os.getenv("API_KEY"),
+  tenant='49699ce8-8229-488c-8535-c4e1fec73e06',
+  database='rag-nl-sql'
+)
     class GeminiEmbeddingFunction(EmbeddingFunction):
         def __call__(self, input: Documents) -> Embeddings:
             client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY"))

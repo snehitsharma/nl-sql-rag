@@ -15,8 +15,11 @@ load_dotenv()
 
 gemini_client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-chroma_client = chromadb.HttpClient(host="chromadb", port=8000) # Connect to the ChromaDB server using HttpClient
-
+chroma_client = chromadb.CloudClient(
+  api_key=os.getenv("API_KEY"),
+  tenant='49699ce8-8229-488c-8535-c4e1fec73e06',
+  database='rag-nl-sql'
+)
 class GeminiEmbeddingFunction(EmbeddingFunction):
     def __call__(self, input: Documents) -> Embeddings:
         client = google_genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
