@@ -107,9 +107,14 @@ def embed_schema():
 
    
     # Only embed if empty — same logic as before
-    collection.delete(ids=list(tables.keys()))
-    collection.add(documents=documents, ids=ids)
-    print(f"Re-embedded {len(documents)} tables")
+    FORCE_REEMBED = False
+
+    if FORCE_REEMBED or collection.count() == 0:
+        collection.delete(ids=list(tables.keys()))
+        collection.add(documents=documents, ids=ids)
+        print(f"Re-embedded {len(documents)} tables")
+    else:
+        print(f"Schema already embedded, skipping")
 
     
     # Still runnable manually if you want to force a re-embed
