@@ -37,6 +37,22 @@ collection = chroma_client.get_or_create_collection(
 )
 
 # --- Functions ---
+def preprocess(question: str) -> str:
+    question = question.lower().strip()
+    
+    synonyms = {
+        "revenue": "totalamount",
+        "clients": "customers",
+        "price": "priceatpurchase",
+        "status": "orderstatus",
+        "avg": "average",
+        "num": "number of",
+    }
+    
+    for word, replacement in synonyms.items():
+        question = question.replace(word, replacement)
+    
+    return question
 
 def get_relevant_schema(question: str, n_results: int = 3) -> str:
     results = collection.query(query_texts=[question], n_results=n_results)

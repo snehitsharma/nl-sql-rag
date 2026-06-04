@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from embed_schema import embed_schema
-from rag import generate_sql, run_query
+from rag import generate_sql, run_query, preprocess
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -38,14 +38,24 @@ class QueryResponse(BaseModel):
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest):
     try:
-        sql = generate_sql(request.question)
+         # preprocessor
+        question = preprocess(request.question)
+        sql = generate_sql(question)
+        if not sql.strip().upper().startswith("SELECT"):
+            raise HTTPException(
+                status_code=400,
+                detail="Only SELECT queries are allowed"
+            )
+        
         result = run_query(sql)
         return QueryResponse(
             question=request.question,
             sql=sql,
             result=result
         )
-    except RuntimeError as e:
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 #FastAPI receives the POST, validates it against QueryRequest — extracts request.question

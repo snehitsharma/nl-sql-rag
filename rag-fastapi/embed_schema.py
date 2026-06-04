@@ -43,12 +43,40 @@ def embed_schema():
         if table_name not in tables:
             tables[table_name] = []
         tables[table_name].append(f"{column_name} ({data_type}, nullable={is_nullable})")
+
+    enums = {
+    "orders": {"orderstatus": "'pending', 'completed', 'cancelled'"},
+    "payment": {"paymentstatus": "'pending', 'completed', 'failed'"},
+    "shipping": {"shippingstatus": "'pending', 'shipped', 'delivered', 'returned'"},
+    }
+
+    relationships = {
+    "orders": ["customerid references customer.customerid"],
+    "orderitem": ["orderid references orders.orderid", "productid references product.productid"],
+    "payment": ["orderid references orders.orderid"],
+    "shipping": ["orderid references orders.orderid"],
+    "cart": ["customerid references customer.customerid"],
+    "cartitem": ["cartid references cart.cartid", "productid references product.productid"],
+    "product": ["categoryid references category.categoryid"],
+    "address": ["customerid references customer.customerid"],
+    }    
     
     #converting dictionary to text
     documents = []
     ids = []
     for table_name, columns in tables.items():
         doc = f"Table: {table_name}\nColumns:\n" + "\n".join(f"  - {col}" for col in columns)
+
+        if table_name in enums:
+            doc += "\nEnum values:"
+            for col, values in enums[table_name].items():
+                doc += f"\n  - {col}: {values}"
+
+        if table_name in relationships:
+            doc += "\nRelationships:"
+            for rel in relationships[table_name]:
+                doc += f"\n  - {rel}"
+
         documents.append(doc)
         ids.append(table_name)
         print(doc)
@@ -58,8 +86,8 @@ def embed_schema():
     #chroma_client = chromadb.HttpClient(host ="chromadb", port=8000) # Use HttpClient to connect to the ChromaDB server
     chroma_client = chromadb.CloudClient(
     api_key=os.getenv("CHROMA_API_KEY"),
-  tenant='49699ce8-8229-488c-8535-c4e1fec73e06',
-  database='rag-nl-sql'
+    tenant='49699ce8-8229-488c-8535-c4e1fec73e06',
+    database='rag-nl-sql'
 )
     class GeminiEmbeddingFunction(EmbeddingFunction):
         def __call__(self, input: Documents) -> Embeddings:
@@ -79,11 +107,9 @@ def embed_schema():
 
    
     # Only embed if empty — same logic as before
-    if collection.count() == 0:
-        collection.add(documents=documents, ids=ids)
-        print(f"Embedded {len(documents)} tables into ChromaDB")
-    else:
-        print(f"Schema already embedded ({collection.count()} tables). Skipping.")
+    collection.delete(ids=list(tables.keys()))
+    collection.add(documents=documents, ids=ids)
+    print(f"Re-embedded {len(documents)} tables")
 
     
     # Still runnable manually if you want to force a re-embed
