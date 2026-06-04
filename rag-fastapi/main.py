@@ -1,5 +1,6 @@
 import os
 from contextlib import asynccontextmanager
+from aiohttp import request
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -38,9 +39,18 @@ class QueryResponse(BaseModel):
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest):
     try:
+         
+        # input guardrail
+        dangerous = ["delete", "drop", "truncate", "insert", "update", "alter"]
+        if any(word in request.question.lower() for word in dangerous):
+            raise HTTPException(
+            status_code=400,
+            detail="Only data retrieval questions are allowed"
+    ) 
          # preprocessor
         question = preprocess(request.question)
         sql = generate_sql(question)
+            # output guardrail
         if not sql.strip().upper().startswith("SELECT"):
             raise HTTPException(
                 status_code=400,
