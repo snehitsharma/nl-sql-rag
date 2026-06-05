@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from embed_schema import embed_schema
-from rag import generate_sql, run_query, preprocess
+from rag import generate_sql, run_query, preprocess, check_knowledge_base, save_to_knowledge_base, clear_knowledge_base
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
@@ -49,7 +49,18 @@ async def query(request: QueryRequest):
     ) 
          # preprocessor
         question = preprocess(request.question)
+            # check knowledge base first
+        kb_hit = check_knowledge_base(question)
+        if kb_hit:
+            return QueryResponse(
+                question=request.question,
+                sql=kb_hit["sql"],
+                result=kb_hit["result"]
+            )
+        
+            # if not in knowledge base, generate SQL
         sql = generate_sql(question)
+            
             # output guardrail
         if not sql.strip().upper().startswith("SELECT"):
             raise HTTPException(
@@ -57,7 +68,12 @@ async def query(request: QueryRequest):
                 detail="Only SELECT queries are allowed"
             )
         
+        
         result = run_query(sql)
+
+        if result["rows"]:
+            save_to_knowledge_base(question, sql, result)
+
         return QueryResponse(
             question=request.question,
             sql=sql,
@@ -75,3 +91,8 @@ async def query(request: QueryRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.delete("/knowledge-base")
+async def clear_kb():
+    clear_knowledge_base()
+    return {"status": "knowledge base cleared"}

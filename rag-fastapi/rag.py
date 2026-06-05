@@ -35,6 +35,10 @@ collection = chroma_client.get_or_create_collection(
     name="schema_store",
     embedding_function=ef
 )
+kb_collection = chroma_client.get_or_create_collection(
+    name="knowledge_base",
+    embedding_function=ef
+)
 
 # --- Functions ---
 def preprocess(question: str) -> str:
@@ -53,6 +57,37 @@ def preprocess(question: str) -> str:
         question = question.replace(word, replacement)
     
     return question
+
+def check_knowledge_base(question: str):
+    results = kb_collection.query(query_texts=[question], n_results=1)
+    if not results["ids"][0]:
+        return None
+    distance = results["distances"][0][0]
+    if distance < 0.05:
+        metadata = results["metadatas"][0][0]
+        return {
+            "sql": metadata["sql"],
+            "result": json.loads(metadata["result"])
+        }
+    return None
+
+def save_to_knowledge_base(question: str, sql: str, result: dict):
+    kb_collection.add(
+        documents=[question],
+        metadatas=[{
+            "sql": sql,
+            "result": json.dumps(result, default=str)
+        }],
+        ids=[str(uuid4())]
+    )
+
+def clear_knowledge_base():
+    global kb_collection
+    chroma_client.delete_collection("knowledge_base")
+    kb_collection = chroma_client.get_or_create_collection(
+        name="knowledge_base",
+        embedding_function=ef
+    )
 
 def get_relevant_schema(question: str, n_results: int = 3) -> str:
     results = collection.query(query_texts=[question], n_results=n_results)
